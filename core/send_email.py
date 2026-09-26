@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 setting = Settings()
 port = 587
-SMTP_SERVER = "live.smtp.mailtrap.io"
+SMTP_SERVER = "smtp.gmail.com"
 
 track_mail_send =[]
 
@@ -81,5 +81,5 @@ def sendMail(user:User,content:Content,mailId:int,filepath:str)->int | None:
         logger.info(f"Email sent successfully to {user.index}. {user.email}")
         return user.index
     except Exception as e:
-        logger.error(f"Email sent failed for {user.index}. {user.email}")
+        logger.error(f"Email sent failed for {user.index}. {user.email} with error: {e}")
         return None
