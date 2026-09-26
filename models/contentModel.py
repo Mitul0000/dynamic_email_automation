@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
 class Content(BaseModel):
-    htmt:str
+    html:str
     subject:str
     
