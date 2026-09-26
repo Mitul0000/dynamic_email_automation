@@ -21,7 +21,7 @@ SMTP_SERVER = "live.smtp.mailtrap.io"
 track_mail_send =[]
 
 
-def receiveMailRequest(users:list[dict[str,Content | User]],filepath:str = ""):
+def getMailRequest(users:list[dict[str,Content | User]],filepath:str = ""):
     
     for index,user in enumerate(users):
         userDetails = user["user"]
@@ -36,7 +36,7 @@ def receiveMailRequest(users:list[dict[str,Content | User]],filepath:str = ""):
             track_mail_send.append(sendMail(userDetails,content,1,filepath))
         
 
-def sendMail(user:User,content:Content,mailId:int,filepath:str)->int:
+def sendMail(user:User,content:Content,mailId:int,filepath:str)->int | None:
     if mailId == 1:
         login = setting.email1
         password = setting.password1
@@ -52,7 +52,7 @@ def sendMail(user:User,content:Content,mailId:int,filepath:str)->int:
     message["From"] = sender_email
     message["To"] = receiver_email
     message["Subject"] = subject
-    body = content.htmt
+    body = content.html
     message.attach(MIMEText(body, "html"))
 
     if filepath:
