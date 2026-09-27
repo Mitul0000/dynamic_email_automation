@@ -9,10 +9,10 @@ from core.send_email import getMailRequest
 logger = logging.getLogger(__name__)
 
 
-def runEmailPipeline(excel_path: str, prompt: str, attachment_path: str = "") -> None:
+def runEmailPipeline(excel_path: str, prompt: str, attachment_path: str = "",start_index:int=1) -> None:
 
     logger.info(f"Pipeline started. excel_path={excel_path}, attachment={bool(attachment_path)}")
-    users: list[User] = extract(excel_path)
+    users: list[User] = extract(excel_path,start_index)
     logger.info(f"Extracted {len(users)} users from {excel_path}")
     if not users:
         logger.warning("No users found in the provided file. Aborting pipeline.")

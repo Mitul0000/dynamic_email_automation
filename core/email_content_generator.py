@@ -8,18 +8,18 @@ logger = logging.getLogger(__name__)
 
 
 SYSTEM_RULES = """
-You are an email content generator. Write ONE personalized email based on the campaign instructions and recipient details given by the user.
+Write ONE personalized email from campaign instructions + recipient info.
 
 RULES:
-- Address the recipient naturally, vary the wording, don't sound templated.
-- Use ONLY facts given in the campaign instructions and recipient details. If a detail (date, venue, dress code, etc.) is missing, skip that line entirely. Never write placeholders like [Insert Date] or [Your Name].
+- Rewrite the campaign message in your own words for this recipient. Keep the same meaning/facts. Vary wording per recipient.
+- Use ONLY facts given. Never invent info. Missing detail? Skip that line. Never use placeholders like [X].
+- LINK: recipient may have a LINK field. Only mention a link if BOTH: (a) campaign instructions describe a link/action (e.g. "get your token"), AND (b) recipient's LINK is not "(none)". Use recipient's LINK exactly, as plain text in a <p> (e.g. "Get your token here: LINK"). If either condition fails, don't mention any link.
 - End with exactly: Best regards, Incognito Organising Committee
 - No ALL CAPS, no spam words (free, urgent, act now, guaranteed, click here, winner), max one "!".
-- Subject: natural, under 60 chars, no emojis/caps/symbols.
-- Style: plain HTML only (<p>, <strong>, <em>, <br>, max one <hr>). Inline CSS allowed, muted colors only (gray/navy/black). No <div>, <table>, <style>, images, or bright colors.
+- Subject: natural, plain, under 60 chars.
+- HTML: only <p> <strong> <em> <br>, max one <hr>. Use <strong> only for key words. NO buttons, tables, divs, images, colors, inline CSS, styles. Plain black-on-white text only.
 
-OUTPUT EXACTLY THIS FORMAT, NOTHING ELSE:
-
+OUTPUT EXACTLY:
 ###SUBJECT_START###
 subject line here
 ###SUBJECT_END###
@@ -32,6 +32,8 @@ email html here
 def contentGeneration(prompt: str, user: User, max_retries: int = 3) -> Content:
     logger.info(f"Starting content generation for user={user.email} (index={user.index})")
 
+    user_link = (getattr(user, "link", "") or "").strip()
+
     user_message = f"""
     CAMPAIGN INSTRUCTIONS:
     \"\"\"{prompt}\"\"\"
@@ -39,6 +41,7 @@ def contentGeneration(prompt: str, user: User, max_retries: int = 3) -> Content:
     RECIPIENT:
     Name: {user.name}
     Email: {user.email}
+    LINK: {user_link if user_link else "(none)"}
     """
 
     last_error = None
@@ -65,6 +68,7 @@ def contentGeneration(prompt: str, user: User, max_retries: int = 3) -> Content:
         try:
             content = _parse_content(raw_output)
             _validate_no_placeholders(content)
+            _validate_link_usage(content, user_link)
             logger.info(f"Successfully generated content for user={user.email} on attempt {attempt + 1}")
             return content
         except ValueError as e:
@@ -106,3 +110,11 @@ def _validate_no_placeholders(content: Content) -> None:
     placeholder_pattern = r"\[.*?\]"
     if re.search(placeholder_pattern, content.html) or re.search(placeholder_pattern, content.subject):
         raise ValueError(f"Output contains unresolved placeholder text: {content.html}")
+
+
+def _validate_link_usage(content: Content, user_link: str) -> None:
+    
+    if user_link and user_link not in content.html:
+        raise ValueError(
+            f"Recipient link was not included verbatim in generated content: {user_link}"
+        )
