@@ -16,8 +16,8 @@ from email.utils import formatdate, make_msgid
 logger = logging.getLogger(__name__)
 
 setting = Settings()
-port = 587
-SMTP_SERVER = "smtp.gmail.com"
+port = 465
+SMTP_SERVER = "smtp.titan.email"
 
 track_mail_send =[]
 
