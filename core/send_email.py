@@ -9,6 +9,7 @@ from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.utils import formatdate, make_msgid
 
 
 
@@ -22,19 +23,17 @@ track_mail_send =[]
 
 
 def getMailRequest(users:list[dict[str,Content | User]],filepath:str = ""):
-    
     for index,user in enumerate(users):
-        userDetails = user["user"]
-        content = user["content"]
+        userDetails: User = user["user"] 
+        content: Content = user["content"] 
 
         if userDetails.index in track_mail_send:
             continue
-        
         if(index>=setting.limit_for_each_mail):
             track_mail_send.append(sendMail(userDetails,content,2,filepath))
         else:
             track_mail_send.append(sendMail(userDetails,content,1,filepath))
-        
+
 
 def sendMail(user:User,content:Content,mailId:int,filepath:str)->int | None:
     if mailId == 1:
@@ -48,14 +47,12 @@ def sendMail(user:User,content:Content,mailId:int,filepath:str)->int | None:
 
     subject = content.subject
     receiver_email = user.email
-    message = MIMEMultipart()
-    message["From"] = sender_email
-    message["To"] = receiver_email
-    message["Subject"] = subject
     body = content.html
-    message.attach(MIMEText(body, "html"))
 
     if filepath:
+        message = MIMEMultipart("mixed")
+        message.attach(MIMEText(body, "plain"))
+
         filename = os.path.basename(filepath)
         with open(filepath,"rb") as attachment:
             part = MIMEBase("application","octet-stream")
@@ -69,6 +66,17 @@ def sendMail(user:User,content:Content,mailId:int,filepath:str)->int | None:
             filename=filename
         )
         message.attach(part)
+    else:
+        # plain text only, single-part message
+        message = MIMEText(body, "plain")
+
+    display_name = "Incognito Organising Committee"
+    message["From"] = f"{display_name} <{sender_email}>"
+    message["To"] = receiver_email
+    message["Subject"] = subject
+    message["Date"] = formatdate(localtime=True)
+    message["Message-ID"] = make_msgid(domain=sender_email.split("@")[-1])
+    message["Reply-To"] = sender_email
 
     text = message.as_string()
     try:
